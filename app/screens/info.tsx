@@ -51,7 +51,7 @@ export default function Info() {
     (Array.isArray(backgroundImage) ? backgroundImage[0] : backgroundImage) ||
     BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
 
-  const MIN_SCALE = 0.9;
+  const MIN_SCALE = 1.2;
   const MAX_SCALE = 2.5;
 
   function clamp(n: number) {
@@ -131,7 +131,7 @@ export default function Info() {
                         {
                           fontSize: 16 * scale,
                           lineHeight: 26 * scale,
-                          color: mutedColor,
+                          color: textColor,
                         },
                       ]}
                     >
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 26,
     textAlign: "center",
-    fontWeight: "500",
+    fontWeight: "400",
   },
   audioButton: {
     flexDirection: "row",
