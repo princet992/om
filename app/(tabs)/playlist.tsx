@@ -6,18 +6,7 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  FlatList,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import aarti from "../../data/Aarti";
 import chalisa from "../../data/chalisa";
@@ -221,14 +210,16 @@ export default function PlaylistScreen() {
         {/* MODAL */}
         <Modal visible={showAddModal} animationType="slide">
           <SafeAreaView style={[styles.modalContainer, { backgroundColor: themeBackground }]}>
+            {/* HEADER */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Bhajan</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+              <Text style={[styles.modalTitle, { color: themeText }]}>Add Bhajan</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={26} color={themeMuted} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.searchBar}>
+            {/* SEARCH */}
+            <View style={[styles.searchBar, { backgroundColor: isDark ? "#222" : "rgba(255,255,255,0.1)" }]}>
               <Ionicons name="search" size={18} color={themeMuted} />
               <TextInput
                 placeholder="Search bhajans..."
@@ -239,6 +230,7 @@ export default function PlaylistScreen() {
               />
             </View>
 
+            {/* CATEGORY SCROLL */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
               {categories.map((c) => (
                 <TouchableOpacity
@@ -246,21 +238,25 @@ export default function PlaylistScreen() {
                   onPress={() => setSelectedCategory(c)}
                   style={[
                     styles.chip,
-                    {
-                      backgroundColor: selectedCategory === c ? "#4ECDC4" : "rgba(255,255,255,0.08)",
-                    },
+                    selectedCategory === c
+                      ? { backgroundColor: "#4ECDC4" }
+                      : { backgroundColor: "rgba(255,255,255,0.08)" },
                   ]}
                 >
-                  <Text style={{ color: selectedCategory === c ? "#fff" : themeText }}>{c}</Text>
+                  <Text style={{ color: selectedCategory === c ? "#fff" : themeText, fontWeight: "600" }}>{c}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
+            {/* BHAJAN LIST */}
             <FlatList
               data={filteredBhajans}
               keyExtractor={(i) => i.id}
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.addItem} onPress={() => addToPlaylist(item)}>
+                <TouchableOpacity
+                  style={[styles.addItem, { backgroundColor: isDark ? "#333" : "rgba(255,255,255,0.05)" }]}
+                  onPress={() => addToPlaylist(item)}
+                >
                   <Image source={{ uri: item.imageUrl }} style={styles.addImage} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.addTitle, { color: themeText }]} numberOfLines={1}>
@@ -270,10 +266,10 @@ export default function PlaylistScreen() {
                       {item.deity} • {item.language}
                     </Text>
                   </View>
-                  <Ionicons name="add-circle-outline" size={26} color="#4ECDC4" />
+                  <Ionicons name="add-circle-outline" size={28} color="#4ECDC4" />
                 </TouchableOpacity>
               )}
-              contentContainerStyle={{ padding: 16 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
             />
           </SafeAreaView>
         </Modal>
@@ -339,31 +335,52 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
   },
   modalTitle: { fontSize: 22, fontWeight: "700" },
+  closeButton: { padding: 6 },
+
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 16,
     marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 10,
+    marginVertical: 12,
+    paddingHorizontal: 12,
     height: 44,
   },
-  searchInput: { flex: 1, marginLeft: 6, fontSize: 15 },
-  categoryScroll: { paddingHorizontal: 16, paddingBottom: 10 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, marginRight: 8 },
+
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: "#fff" },
+
+  categoryScroll: { paddingHorizontal: 16, paddingVertical: 8 },
+
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   addItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 18,
-    padding: 10,
-    marginBottom: 10,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
+
   addImage: { width: 56, height: 56, borderRadius: 14, marginRight: 12 },
+
   addTitle: { fontSize: 16, fontWeight: "600" },
   addSubtitle: { fontSize: 13, fontWeight: "500" },
 });
