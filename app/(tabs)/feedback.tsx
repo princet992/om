@@ -1,407 +1,223 @@
-import { ThemedView } from "@/components/themed-view";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useThemeColor } from "@/hooks/use-theme-color";
-import { Ionicons } from "@expo/vector-icons";
-import * as Clipboard from "expo-clipboard";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  ScrollView,
-  Share,
-  StyleSheet,
+  View,
   Text,
   TextInput,
-  TouchableOpacity,
-  View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Pressable,
+  StyleSheet,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
+import * as Clipboard from "expo-clipboard";
+import { Share } from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function FeedbackScreen() {
-  const themeText = useThemeColor({}, "text");
-  const themeCard = useThemeColor({}, "card");
-  const themeMuted = useThemeColor({}, "muted");
-  const themeAccent = useThemeColor({}, "accent");
-  const themeBackground = useThemeColor({}, "background");
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-
   const [feedback, setFeedback] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  const textColor = useThemeColor({}, "text");
+  const bgCard = useThemeColor({}, "card");
+  const bgAccent = useThemeColor({}, "accent");
+  const bgMuted = useThemeColor({}, "muted");
+  const bgScreen = useThemeColor({}, "background");
+
   const handleSubmit = async () => {
     if (!feedback.trim()) {
-      Alert.alert("Required", "Please enter your feedback or suggestion.");
+      Alert.alert("Required", "Please enter your feedback.");
       return;
     }
 
-    setIsSubmitting(true);
+    setLoading(true);
+    const message = `Feedback\n\nName: ${name || "Anonymous"}\nEmail: ${email || "Not provided"}\n\n${feedback}`;
 
     try {
-      const feedbackMessage = `Feedback for Spiritual App\n\nName: ${
-        name || "Anonymous"
-      }\nEmail: ${email || "Not provided"}\n\nFeedback:\n${feedback}`;
-
-      // Primary: open email client pre-filled to the target address
-      try {
-        const subject = encodeURIComponent("Feedback: Spiritual App");
-        const body = encodeURIComponent(feedbackMessage);
-        const mailto = `mailto:mprincet992@gmail.com?subject=${subject}&body=${body}`;
-        await Linking.openURL(mailto);
-        setFeedback("");
-        setName("");
-        setEmail("");
-        return;
-      } catch {
-        // Fallback: try Share API
-        try {
-          await Share.share({
-            message: feedbackMessage,
-            title: "Feedback: Spiritual App",
-          });
-          Alert.alert(
-            "Thank You!",
-            "You can send this feedback via any app. We appreciate your input!",
-            [
-              {
-                text: "OK",
-                onPress: () => {
-                  setFeedback("");
-                  setName("");
-                  setEmail("");
-                },
-              },
-            ]
-          );
-          return;
-        } catch {
-          // Final fallback: copy to clipboard
-          try {
-            await Clipboard.setStringAsync(feedbackMessage);
-            Alert.alert(
-              "Copied!",
-              "Your feedback has been copied to clipboard. You can paste it in an email to: mprincet992@gmail.com",
-              [
-                {
-                  text: "OK",
-                  onPress: () => {
-                    setFeedback("");
-                    setName("");
-                    setEmail("");
-                  },
-                },
-              ]
-            );
-            return;
-          } catch {
-            Alert.alert(
-              "Feedback Ready",
-              `Your feedback is ready. Please send it to: mprincet992@gmail.com\n\nFeedback preview:\n${feedbackMessage.substring(
-                0,
-                150
-              )}...`
-            );
-            setFeedback("");
-            setName("");
-            setEmail("");
-            return;
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error sending feedback:", error);
-      Alert.alert(
-        "Thank You!",
-        "Your feedback has been saved. Thank you for your input!"
-      );
+      const mailto = `mailto:mprincet992@gmail.com?subject=App Feedback&body=${encodeURIComponent(message)}`;
+      await Linking.openURL(mailto);
       setFeedback("");
       setName("");
       setEmail("");
+    } catch {
+      try {
+        await Share.share({ message });
+      } catch {
+        await Clipboard.setStringAsync(message);
+        Alert.alert("Copied!", "Feedback copied to clipboard. You can paste it into an email.");
+      }
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
-  };
-  // Helper function to add opacity to hex color
-  const hexToRgba = (hex: string, opacity: number): string => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return hex;
-    const r = parseInt(result[1], 16);
-    const g = parseInt(result[2], 16);
-    const b = parseInt(result[3], 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
   return (
-    <LinearGradient
-      colors={
-        isDark
-          ? [themeBackground, hexToRgba(themeCard, 0.5)]
-          : [themeBackground, themeBackground]
-      }
-      style={{ flex: 1 }}
-    >
-      <SafeAreaView style={{ flex: 1 }}>
-        <ThemedView style={styles.container}>
-          <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: themeText }]}>
-              Feedback & Suggestions
-            </Text>
-            <Text style={[styles.headerSubtitle, { color: themeMuted }]}>
-              Help us improve the app
-            </Text>
-          </View>
-
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ flex: 1 }}
+    <SafeAreaView style={[styles.safe, { backgroundColor: bgScreen }]}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Animated.View
+            entering={FadeInUp.springify().delay(100)}
+            style={[
+              styles.card,
+              {
+                backgroundColor: bgCard,
+                shadowColor: isDark ? "#000" : "#aaa",
+              },
+            ]}
           >
-            <ScrollView
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View
+            <Animated.View entering={FadeInDown.delay(200)}>
+              <Ionicons
+                name="chatbubbles-outline"
+                size={48}
+                color={bgAccent}
+                style={{ alignSelf: "center", marginBottom: 8 }}
+              />
+            </Animated.View>
+
+            <Text style={[styles.title, { color: textColor }]}>Feedback & Suggestions</Text>
+            <Text style={[styles.subtitle, { color: bgMuted }]}>
+              We value your input. Share your ideas or report an issue.
+            </Text>
+
+            <Animated.View entering={FadeInUp.delay(300)}>
+              <TextInput
                 style={[
-                  styles.card,
+                  styles.input,
                   {
-                    backgroundColor: isDark
-                      ? hexToRgba(themeCard, 0.8)
-                      : themeCard,
-                    borderColor: hexToRgba(themeMuted, 0.2),
+                    color: textColor,
+                    backgroundColor: isDark ? "#1E1E1E" : "#F6F6F6",
                   },
                 ]}
-              >
-                <Ionicons
-                  name="chatbubble-ellipses-outline"
-                  size={48}
-                  color={themeAccent}
-                  style={styles.icon}
-                />
-                <Text style={[styles.description, { color: themeMuted }]}>
-                  We value your feedback! Share your thoughts, suggestions, or
-                  report any issues you have encountered. Your input helps us
-                  create a better experience for everyone.
-                </Text>
-              </View>
+                placeholder="Your Name"
+                placeholderTextColor={bgMuted}
+                value={name}
+                onChangeText={setName}
+              />
+            </Animated.View>
 
-              <View
+            <Animated.View entering={FadeInUp.delay(400)}>
+              <TextInput
                 style={[
-                  styles.inputContainer,
+                  styles.input,
                   {
-                    backgroundColor: isDark
-                      ? hexToRgba(themeCard, 0.8)
-                      : themeCard,
-                    borderColor: hexToRgba(themeMuted, 0.2),
+                    color: textColor,
+                    backgroundColor: isDark ? "#1E1E1E" : "#F6F6F6",
                   },
                 ]}
-              >
-                <Text style={[styles.label, { color: themeText }]}>
-                  Your Name
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: isDark
-                        ? hexToRgba(themeBackground, 0.5)
-                        : hexToRgba(themeMuted, 0.1),
-                      color: themeText,
-                      borderColor: hexToRgba(themeMuted, 0.3),
-                    },
-                  ]}
-                  placeholder="Enter your name"
-                  placeholderTextColor={themeMuted}
-                  value={name}
-                  onChangeText={setName}
-                />
-              </View>
+                placeholder="Email (optional)"
+                placeholderTextColor={bgMuted}
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </Animated.View>
 
-              <View
+            <Animated.View entering={FadeInUp.delay(500)}>
+              <TextInput
                 style={[
-                  styles.inputContainer,
+                  styles.textarea,
                   {
-                    backgroundColor: isDark
-                      ? hexToRgba(themeCard, 0.8)
-                      : themeCard,
-                    borderColor: hexToRgba(themeMuted, 0.2),
+                    color: textColor,
+                    backgroundColor: isDark ? "#1E1E1E" : "#F6F6F6",
                   },
                 ]}
-              >
-                <Text style={[styles.label, { color: themeText }]}>Email</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: isDark
-                        ? hexToRgba(themeBackground, 0.5)
-                        : hexToRgba(themeMuted, 0.1),
-                      color: themeText,
-                      borderColor: hexToRgba(themeMuted, 0.3),
-                    },
-                  ]}
-                  placeholder="your.email@example.com"
-                  placeholderTextColor={themeMuted}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
+                placeholder="Write your feedback..."
+                placeholderTextColor={bgMuted}
+                multiline
+                numberOfLines={6}
+                value={feedback}
+                onChangeText={setFeedback}
+              />
+            </Animated.View>
 
-              <View
-                style={[
-                  styles.inputContainer,
-                  {
-                    backgroundColor: isDark
-                      ? hexToRgba(themeCard, 0.8)
-                      : themeCard,
-                    borderColor: hexToRgba(themeMuted, 0.2),
-                  },
-                ]}
-              >
-                <Text style={[styles.label, { color: themeText }]}>
-                  Feedback / Suggestion *
-                </Text>
-                <TextInput
-                  style={[
-                    styles.textArea,
-                    {
-                      backgroundColor: isDark
-                        ? hexToRgba(themeBackground, 0.5)
-                        : hexToRgba(themeMuted, 0.1),
-                      color: themeText,
-                      borderColor: hexToRgba(themeMuted, 0.3),
-                    },
-                  ]}
-                  placeholder="Share your thoughts, suggestions, feature requests, or report issues..."
-                  placeholderTextColor={themeMuted}
-                  value={feedback}
-                  onChangeText={setFeedback}
-                  multiline
-                  numberOfLines={8}
-                  textAlignVertical="top"
-                />
-              </View>
+            <Animated.View entering={FadeInUp.delay(600)}>
+              <Pressable onPress={handleSubmit} disabled={loading} style={{ borderRadius: 10, overflow: "hidden" }}>
+                <LinearGradient
+                  colors={["#4ECDC4", "#45B7D1"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.button, { opacity: loading ? 0.7 : 1 }]}
+                >
+                  <Ionicons name="send" color="#fff" size={18} />
+                  <Text style={styles.buttonText}>{loading ? "Sending..." : "Send Feedback"}</Text>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
 
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  {
-                    backgroundColor: themeAccent,
-                    opacity: isSubmitting ? 0.7 : 1,
-                  },
-                ]}
-                onPress={handleSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <Text style={styles.submitButtonText}>Sending...</Text>
-                ) : (
-                  <>
-                    <Ionicons name="send" size={20} color="#FFFFFF" />
-                    <Text style={styles.submitButtonText}>Send Feedback</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <Text style={[styles.footer, { color: themeMuted }]}>
-                Your feedback helps us improve the app experience for everyone.
-                Thank you!
-              </Text>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </ThemedView>
-      </SafeAreaView>
-    </LinearGradient>
+            <Text style={[styles.footer, { color: bgMuted }]}>
+              Your feedback helps us make the app better for everyone.
+            </Text>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginBottom: 30,
+  safe: { flex: 1 },
+  scroll: { flexGrow: 1, padding: 20, justifyContent: "center" },
+  card: {
+    borderRadius: 20,
+    padding: 24,
+    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    paddingTop: 10,
-  },
-  headerTitle: {
-    fontSize: 28,
+  title: {
+    fontSize: 22,
     fontWeight: "700",
+    textAlign: "center",
     marginBottom: 4,
   },
-  headerSubtitle: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  card: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    alignItems: "center",
-    borderWidth: 1,
-  },
-  icon: {
-    marginBottom: 12,
-  },
-  description: {
-    fontSize: 15,
-    lineHeight: 22,
+  subtitle: {
     textAlign: "center",
-  },
-  inputContainer: {
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 8,
+    fontSize: 14,
+    marginBottom: 18,
   },
   input: {
-    height: 48,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    borderWidth: 1,
-  },
-  textArea: {
-    minHeight: 120,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    borderWidth: 1,
+    marginBottom: 12,
   },
-  submitButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
+  textarea: {
     borderRadius: 12,
-    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    textAlignVertical: "top",
+    minHeight: 120,
     marginBottom: 16,
+  },
+  button: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 14,
     gap: 8,
   },
-  submitButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
+  buttonText: {
+    color: "#fff",
     fontWeight: "700",
+    fontSize: 16,
   },
   footer: {
-    fontSize: 13,
+    marginTop: 16,
     textAlign: "center",
+    fontSize: 13,
     lineHeight: 18,
-    marginTop: 8,
   },
 });
