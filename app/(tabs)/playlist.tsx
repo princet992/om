@@ -21,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import aarti from "../../data/Aarti";
 import chalisa from "../../data/chalisa";
 import strotam from "../../data/strotam";
+import { extractDeity, deityHindiNames, deityDisplayNames } from "../../utils/deityUtils";
 
 interface PlaylistItem {
   id: string;
@@ -73,17 +74,20 @@ const getDefaultImage = (deity: string) => {
 };
 
 const convertToPlaylistItems = (data: any[], type: string): PlaylistItem[] =>
-  data.map((item, index) => ({
-    id: `${type}-${item._id || index}`,
-    title: item.title || item.name || "Untitled",
-    deity: item.deity || item.category || "Universal",
-    language: item.language || "Hindi",
-    imageUrl: item.imageUrl || getDefaultImage(item.deity),
-    content:
-      item.content ||
-      `${item.title} - A beautiful ${type.toLowerCase()} for spiritual practice.`,
-    audio: item.audio,
-  }));
+  data.map((item, index) => {
+    const deity = extractDeity(item);
+    return {
+      id: `${type}-${item._id || item.id || index}`,
+      title: item.title || item.name || "Untitled",
+      deity: deity || "Other",
+      language: item.language || "Hindi",
+      imageUrl: item.imageUrl || getDefaultImage(deity),
+      content:
+        item.content ||
+        `${item.title} - A beautiful ${type.toLowerCase()} for spiritual practice.`,
+      audio: item.audio,
+    };
+  });
 
 const ALL_CONTENT: PlaylistItem[] = [
   ...convertToPlaylistItems(chalisa, "Chalisa"),
@@ -186,9 +190,9 @@ export default function PlaylistScreen() {
       <SafeAreaView style={{ flex: 1 }}>
         {/* HEADER */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Weekly Bhajan Plan</Text>
+          <Text style={styles.headerTitle}>मेरी साप्ताहिक भजन योजना</Text>
           <Text style={styles.headerSubtitle}>
-            Curate your devotion day by day
+            My Weekly Bhajan Plan
           </Text>
         </View>
 
@@ -218,7 +222,8 @@ export default function PlaylistScreen() {
                   styles.dayText,
                   {
                     color:
-                      selectedDay === day ? "#fff" : "rgba(255,255,255,0.9)",
+                      selectedDay === day ? "#fff" : "rgba(255,255,255,0.85)",
+                    fontWeight: selectedDay === day ? "700" : "600",
                   },
                 ]}
               >
@@ -252,12 +257,17 @@ export default function PlaylistScreen() {
                   style={styles.itemImage}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.itemTitle}>{item.title}</Text>
+                  <Text style={styles.itemTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
                   <Text style={styles.itemSubtitle}>
-                    {item.deity} • {item.language}
+                    {deityHindiNames[item.deity] || item.deity} • {item.language}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => removeFromPlaylist(item.id)}>
+                <TouchableOpacity 
+                  onPress={() => removeFromPlaylist(item.id)}
+                  style={styles.deleteButton}
+                >
                   <Ionicons name="trash-outline" size={22} color="#FF6B6B" />
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -267,10 +277,13 @@ export default function PlaylistScreen() {
             <View style={styles.empty}>
               <Ionicons
                 name="musical-notes-outline"
-                size={64}
-                color="rgba(255,255,255,0.7)"
+                size={72}
+                color="rgba(255,255,255,0.6)"
               />
               <Text style={styles.emptyText}>
+                {selectedDay} के लिए अभी कोई भजन नहीं
+              </Text>
+              <Text style={styles.emptySubtext}>
                 No bhajans yet for {selectedDay}
               </Text>
             </View>
@@ -300,15 +313,26 @@ export default function PlaylistScreen() {
             ]}
           >
             {/* HEADER */}
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: themeText }]}>
-                Add Bhajan
-              </Text>
+            <View style={[styles.modalHeader, { 
+              borderBottomColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
+              backgroundColor: isDark ? "#1a1a1a" : "#fff",
+            }]}>
+              <View>
+                <Text style={[styles.modalTitle, { color: themeText }]}>
+                  भजन जोड़ें
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: themeMuted }]}>
+                  Add Bhajan
+                </Text>
+              </View>
               <TouchableOpacity
                 onPress={() => setShowAddModal(false)}
-                style={styles.closeButton}
+                style={[styles.closeButton, {
+                  backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+                  borderRadius: 20,
+                }]}
               >
-                <Ionicons name="close" size={26} color={themeMuted} />
+                <Ionicons name="close" size={22} color={themeText} />
               </TouchableOpacity>
             </View>
 
@@ -316,47 +340,92 @@ export default function PlaylistScreen() {
             <View
               style={[
                 styles.searchBar,
-                { backgroundColor: isDark ? "#222" : "rgba(255,255,255,0.1)" },
+                { 
+                  backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+                  borderWidth: 1,
+                  borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
+                },
               ]}
             >
-              <Ionicons name="search" size={18} color={themeMuted} />
+              <Ionicons name="search" size={20} color={themeMuted} />
               <TextInput
-                placeholder="Search bhajans..."
+                placeholder="भजन खोजें..."
                 placeholderTextColor={themeMuted}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: themeText }]}
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons name="close-circle" size={20} color={themeMuted} />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* CATEGORY SCROLL */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryScroll}
-            >
-              {categories.map((c) => (
-                <TouchableOpacity
-                  key={c}
-                  onPress={() => setSelectedCategory(c)}
-                  style={[
-                    styles.chip,
-                    selectedCategory === c
-                      ? { backgroundColor: "#4ECDC4" }
-                      : { backgroundColor: "rgba(255,255,255,0.08)" },
-                  ]}
-                >
-                  <Text
-                    style={{
-                      color: selectedCategory === c ? "#fff" : themeText,
-                      fontWeight: "600",
-                    }}
-                  >
-                    {c}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={styles.categorySection}>
+              <Text style={[styles.categoryLabel, { color: themeMuted }]}>
+                श्रेणी / Category
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryScroll}
+              >
+                {categories.map((c) => {
+                  const isSelected = selectedCategory === c;
+                  const chipColor = isDark 
+                    ? (isSelected ? "#4ECDC4" : "transparent")
+                    : (isSelected ? "#1976D2" : "transparent");
+                  
+                  return (
+                    <TouchableOpacity
+                      key={c}
+                      onPress={() => setSelectedCategory(c)}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.chip,
+                        isSelected
+                          ? { 
+                              backgroundColor: chipColor,
+                              shadowColor: chipColor,
+                              shadowOpacity: 0.4,
+                              shadowRadius: 6,
+                              shadowOffset: { width: 0, height: 2 },
+                              elevation: 4,
+                              transform: [{ scale: 1.02 }],
+                            }
+                          : { 
+                              backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+                              borderWidth: 1.5,
+                              borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)",
+                            },
+                      ]}
+                    >
+                      {isSelected && (
+                        <Ionicons 
+                          name="checkmark-circle" 
+                          size={16} 
+                          color="#fff" 
+                          style={{ marginRight: 6 }}
+                        />
+                      )}
+                      <Text
+                        style={[
+                          styles.chipText,
+                          {
+                            color: isSelected ? "#fff" : themeText,
+                            fontWeight: isSelected ? "700" : "600",
+                          },
+                        ]}
+                      >
+                        {c === "All" ? "सभी" : deityHindiNames[c] || c}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
 
             {/* BHAJAN LIST */}
             <FlatList
@@ -381,19 +450,23 @@ export default function PlaylistScreen() {
                   <View style={{ flex: 1 }}>
                     <Text
                       style={[styles.addTitle, { color: themeText }]}
-                      numberOfLines={1}
+                      numberOfLines={2}
                     >
                       {item.title}
                     </Text>
                     <Text style={[styles.addSubtitle, { color: themeMuted }]}>
-                      {item.deity} • {item.language}
+                      {deityHindiNames[item.deity] || item.deity} • {item.language}
                     </Text>
                   </View>
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={28}
-                    color="#4ECDC4"
-                  />
+                  <View style={[styles.addButton, {
+                    backgroundColor: isDark ? "rgba(78, 205, 196, 0.2)" : "rgba(25, 118, 210, 0.1)",
+                  }]}>
+                    <Ionicons
+                      name="add-circle"
+                      size={28}
+                      color={isDark ? "#4ECDC4" : "#1976D2"}
+                    />
+                  </View>
                 </TouchableOpacity>
               )}
               contentContainerStyle={{
@@ -409,12 +482,17 @@ export default function PlaylistScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingVertical: 14 },
-  headerTitle: { fontSize: 26, fontWeight: "800", color: "#fff" },
+  header: { paddingHorizontal: 20, paddingVertical: 16 },
+  headerTitle: { 
+    fontSize: 28, 
+    fontWeight: "800", 
+    color: "#fff",
+    marginBottom: 4,
+  },
   headerSubtitle: {
-    color: "rgba(255,255,255,0.9)",
+    color: "rgba(255,255,255,0.85)",
     fontWeight: "500",
-    marginTop: 4,
+    fontSize: 14,
   },
   dayScroll: {
     paddingHorizontal: 12,
@@ -439,20 +517,60 @@ const styles = StyleSheet.create({
   },
 
   playCard: {
-    borderRadius: 22,
+    borderRadius: 18,
     overflow: "hidden",
-    marginBottom: 16,
+    marginBottom: 14,
+    marginHorizontal: 16,
     shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
-  cardInner: { flexDirection: "row", alignItems: "center", padding: 14 },
-  itemImage: { width: 64, height: 64, borderRadius: 16, marginRight: 12 },
-  itemTitle: { fontSize: 17, fontWeight: "700", color: "#222" },
-  itemSubtitle: { fontSize: 13, color: "#666" },
-  listContainer: { paddingHorizontal: 16, paddingVertical: 20 },
-  empty: { alignItems: "center", marginTop: 60 },
-  emptyText: { color: "#fff", fontWeight: "600", fontSize: 16, marginTop: 10 },
+  cardInner: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    padding: 16,
+    backgroundColor: "rgba(255,255,255,0.95)",
+  },
+  itemImage: { 
+    width: 70, 
+    height: 70, 
+    borderRadius: 14, 
+    marginRight: 14,
+    backgroundColor: "rgba(0,0,0,0.05)",
+  },
+  itemTitle: { 
+    fontSize: 16, 
+    fontWeight: "700", 
+    color: "#1a1a1a",
+    marginBottom: 4,
+  },
+  itemSubtitle: { 
+    fontSize: 13, 
+    color: "#666",
+    fontWeight: "500",
+  },
+  listContainer: { paddingVertical: 20 },
+  empty: { 
+    alignItems: "center", 
+    marginTop: 80,
+    paddingHorizontal: 32,
+  },
+  emptyText: { 
+    color: "rgba(255,255,255,0.9)", 
+    fontWeight: "700", 
+    fontSize: 18, 
+    marginTop: 16,
+    textAlign: "center",
+  },
+  emptySubtext: {
+    color: "rgba(255,255,255,0.7)",
+    fontWeight: "500",
+    fontSize: 14,
+    marginTop: 6,
+    textAlign: "center",
+  },
   fab: { position: "absolute", bottom: 28, right: 24 },
   fabInner: {
     width: 64,
@@ -469,53 +587,114 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
   },
-  modalTitle: { fontSize: 22, fontWeight: "700" },
-  closeButton: { padding: 6 },
+  modalTitle: { 
+    fontSize: 24, 
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  closeButton: { 
+    padding: 8,
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 16,
+    borderRadius: 14,
     marginHorizontal: 16,
-    marginVertical: 12,
-    paddingHorizontal: 12,
-    height: 44,
+    marginVertical: 14,
+    paddingHorizontal: 14,
+    height: 48,
   },
 
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: "#fff" },
+  searchInput: { 
+    flex: 1, 
+    marginLeft: 10, 
+    fontSize: 16,
+    fontWeight: "500",
+  },
 
-  categoryScroll: { paddingHorizontal: 16, paddingVertical: 8 },
+  categorySection: {
+    marginBottom: 8,
+  },
+  categoryLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 10,
+    marginHorizontal: 16,
+  },
+  categoryScroll: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 4,
+  },
 
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
-    height: 50,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginRight: 12,
+    justifyContent: "center",
+    minHeight: 44,
+    minWidth: 80,
+  },
+  chipText: {
+    fontSize: 14,
+    letterSpacing: 0.3,
   },
 
   addItem: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 16,
-    padding: 12,
+    padding: 14,
     marginBottom: 12,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 
-  addImage: { width: 56, height: 56, borderRadius: 14, marginRight: 12 },
+  addImage: { 
+    width: 60, 
+    height: 60, 
+    borderRadius: 12, 
+    marginRight: 14,
+    backgroundColor: "rgba(0,0,0,0.05)",
+  },
 
-  addTitle: { fontSize: 16, fontWeight: "600" },
-  addSubtitle: { fontSize: 13, fontWeight: "500" },
+  addTitle: { 
+    fontSize: 16, 
+    fontWeight: "600",
+    marginBottom: 4,
+    lineHeight: 22,
+  },
+  addSubtitle: { 
+    fontSize: 13, 
+    fontWeight: "500",
+  },
+  addButton: {
+    padding: 4,
+    borderRadius: 16,
+  },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 107, 107, 0.1)",
+  },
 });
