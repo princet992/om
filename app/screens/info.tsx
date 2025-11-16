@@ -4,11 +4,23 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
-import { Dimensions, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Dimensions,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 const { width, height } = Dimensions.get("window");
 
@@ -51,16 +63,24 @@ export default function Info() {
   return (
     <>
       <StatusBar style="dark" />
-      <LinearGradient colors={["#FFF3E0", "#FAE3C6", "#FFE5B4"]} style={styles.background}>
+      <LinearGradient
+        colors={["#FFF3E0", "#FAE3C6", "#FFE5B4"]}
+        style={styles.background}
+      >
         <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             <GestureDetector gesture={pinchGesture}>
               <Animated.View style={styles.card}>
                 <Text style={styles.title}>{normalizedLabel}</Text>
 
-                <Animated.Text style={[styles.info, animatedTextStyle]}>{normalizedInfo}</Animated.Text>
+                <Animated.Text style={[styles.info, animatedTextStyle]}>
+                  {normalizedInfo}
+                </Animated.Text>
 
-                <View style={styles.actions}>
+                {/* <View style={styles.actions}>
                   <TouchableOpacity style={styles.iconButton} onPress={copyToClipboard}>
                     <Ionicons name="copy-outline" size={22} color={accentColor} />
                     <Text style={styles.actionText}>Copy</Text>
@@ -70,7 +90,7 @@ export default function Info() {
                     <Ionicons name="share-outline" size={22} color={accentColor} />
                     <Text style={styles.actionText}>Share</Text>
                   </TouchableOpacity>
-                </View>
+                </View> */}
               </Animated.View>
             </GestureDetector>
           </ScrollView>
@@ -91,17 +111,20 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    padding: 0,
     paddingBottom: 60,
   },
   card: {
-    backgroundColor: "rgba(255,255,255,0.85)",
-    borderRadius: 18,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    // make the card transparent and fill available space so the gradient is full-screen
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    padding: 16,
+    flex: 1,
+    justifyContent: "center",
+    shadowColor: "transparent",
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   title: {
     fontSize: 26,
@@ -109,17 +132,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#7B341E",
     marginBottom: 24,
+    marginHorizontal: 0,
     fontFamily: "serif",
     textDecorationLine: "underline",
   },
   info: {
     textAlign: "center",
-    fontWeight: "500",
+    fontWeight: "600",
     fontFamily: "serif",
     color: "#3B2F2F",
-    fontSize: 20,
-    lineHeight: 34,
+    fontSize: 24, // increased font size
+    lineHeight: 36, // adjusted for readability
+    paddingHorizontal: 20, // keeps text off the screen edges
+    width: "100%", // full-width text block
   },
+
   actions: {
     flexDirection: "row",
     justifyContent: "center",

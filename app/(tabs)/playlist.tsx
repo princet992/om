@@ -6,7 +6,17 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { FlatList, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import aarti from "../../data/Aarti";
 import chalisa from "../../data/chalisa";
@@ -27,7 +37,15 @@ interface DayPlaylist {
   items: PlaylistItem[];
 }
 
-const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAYS_OF_WEEK = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
 
 const DAY_COLORS = {
   Monday: ["#F857A6", "#FF5858"],
@@ -41,11 +59,17 @@ const DAY_COLORS = {
 
 const getDefaultImage = (deity: string) => {
   const map: Record<string, string> = {
-    Hanuman: "https://upload.wikimedia.org/wikipedia/commons/8/8e/Hanuman_Image.jpg",
-    Shiva: "https://upload.wikimedia.org/wikipedia/commons/8/8f/Lord_Shiva_Meditation.jpg",
-    Durga: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Goddess_Durga_Artwork.jpg",
+    Hanuman:
+      "https://upload.wikimedia.org/wikipedia/commons/8/8e/Hanuman_Image.jpg",
+    Shiva:
+      "https://upload.wikimedia.org/wikipedia/commons/8/8f/Lord_Shiva_Meditation.jpg",
+    Durga:
+      "https://upload.wikimedia.org/wikipedia/commons/4/4b/Goddess_Durga_Artwork.jpg",
   };
-  return map[deity] || "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400";
+  return (
+    map[deity] ||
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400"
+  );
 };
 
 const convertToPlaylistItems = (data: any[], type: string): PlaylistItem[] =>
@@ -55,7 +79,9 @@ const convertToPlaylistItems = (data: any[], type: string): PlaylistItem[] =>
     deity: item.deity || item.category || "Universal",
     language: item.language || "Hindi",
     imageUrl: item.imageUrl || getDefaultImage(item.deity),
-    content: item.content || `${item.title} - A beautiful ${type.toLowerCase()} for spiritual practice.`,
+    content:
+      item.content ||
+      `${item.title} - A beautiful ${type.toLowerCase()} for spiritual practice.`,
     audio: item.audio,
   }));
 
@@ -76,7 +102,9 @@ export default function PlaylistScreen() {
   const themeBackground = useThemeColor({}, "background");
 
   const [selectedDay, setSelectedDay] = useState("Monday");
-  const [playlists, setPlaylists] = useState<DayPlaylist[]>(DAYS_OF_WEEK.map((d) => ({ day: d, items: [] })));
+  const [playlists, setPlaylists] = useState<DayPlaylist[]>(
+    DAYS_OF_WEEK.map((d) => ({ day: d, items: [] }))
+  );
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -90,7 +118,8 @@ export default function PlaylistScreen() {
       if (raw) {
         const parsed = JSON.parse(raw);
         const normalized = DAYS_OF_WEEK.map(
-          (day) => parsed.find((p: DayPlaylist) => p.day === day) || { day, items: [] }
+          (day) =>
+            parsed.find((p: DayPlaylist) => p.day === day) || { day, items: [] }
         );
         setPlaylists(normalized);
       }
@@ -101,18 +130,29 @@ export default function PlaylistScreen() {
   useEffect(() => {
     if (!loadedRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(playlists)), 300);
+    saveTimerRef.current = setTimeout(
+      () => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(playlists)),
+      300
+    );
     return () => clearTimeout(saveTimerRef.current);
   }, [playlists]);
 
-  const currentPlaylist = playlists.find((p) => p.day === selectedDay) || { day: selectedDay, items: [] };
+  const currentPlaylist = playlists.find((p) => p.day === selectedDay) || {
+    day: selectedDay,
+    items: [],
+  };
 
-  const categories = ["All", ...Array.from(new Set(ALL_CONTENT.map((i) => i.deity)))];
+  const categories = [
+    "All",
+    ...Array.from(new Set(ALL_CONTENT.map((i) => i.deity))),
+  ];
 
   const filteredBhajans = ALL_CONTENT.filter((i) => {
     const s = searchQuery.toLowerCase();
     const match =
-      i.title.toLowerCase().includes(s) || i.deity.toLowerCase().includes(s) || i.language.toLowerCase().includes(s);
+      i.title.toLowerCase().includes(s) ||
+      i.deity.toLowerCase().includes(s) ||
+      i.language.toLowerCase().includes(s);
     const matchCat = selectedCategory === "All" || i.deity === selectedCategory;
     return match && matchCat;
   });
@@ -121,26 +161,43 @@ export default function PlaylistScreen() {
     const pl = playlists.find((p) => p.day === selectedDay);
     if (!pl) return;
     if (pl.items.some((x) => x.id === item.id)) return;
-    setPlaylists((prev) => prev.map((p) => (p.day === selectedDay ? { ...p, items: [...p.items, item] } : p)));
+    setPlaylists((prev) =>
+      prev.map((p) =>
+        p.day === selectedDay ? { ...p, items: [...p.items, item] } : p
+      )
+    );
     setShowAddModal(false);
   };
 
   const removeFromPlaylist = (id: string) =>
     setPlaylists((prev) =>
-      prev.map((p) => (p.day === selectedDay ? { ...p, items: p.items.filter((i) => i.id !== id) } : p))
+      prev.map((p) =>
+        p.day === selectedDay
+          ? { ...p, items: p.items.filter((i) => i.id !== id) }
+          : p
+      )
     );
 
   return (
-    <LinearGradient colors={DAY_COLORS[selectedDay as keyof typeof DAY_COLORS]} style={{ flex: 1 }}>
+    <LinearGradient
+      colors={DAY_COLORS[selectedDay as keyof typeof DAY_COLORS]}
+      style={{ flex: 1 }}
+    >
       <SafeAreaView style={{ flex: 1 }}>
         {/* HEADER */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Weekly Bhajan Plan</Text>
-          <Text style={styles.headerSubtitle}>Curate your devotion day by day</Text>
+          <Text style={styles.headerSubtitle}>
+            Curate your devotion day by day
+          </Text>
         </View>
 
         {/* DAYS */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.dayScroll}
+        >
           {DAYS_OF_WEEK.map((day) => (
             <TouchableOpacity
               key={day}
@@ -156,7 +213,15 @@ export default function PlaylistScreen() {
                 },
               ]}
             >
-              <Text style={[styles.dayText, { color: selectedDay === day ? "#fff" : "rgba(255,255,255,0.9)" }]}>
+              <Text
+                style={[
+                  styles.dayText,
+                  {
+                    color:
+                      selectedDay === day ? "#fff" : "rgba(255,255,255,0.9)",
+                  },
+                ]}
+              >
                 {day.slice(0, 3)}
               </Text>
             </TouchableOpacity>
@@ -168,7 +233,11 @@ export default function PlaylistScreen() {
           data={currentPlaylist.items}
           keyExtractor={(i) => i.id}
           renderItem={({ item }) => (
-            <BlurView intensity={isDark ? 30 : 80} tint="light" style={styles.playCard}>
+            <BlurView
+              intensity={isDark ? 30 : 80}
+              tint="light"
+              style={styles.playCard}
+            >
               <TouchableOpacity
                 style={styles.cardInner}
                 onPress={() =>
@@ -178,7 +247,10 @@ export default function PlaylistScreen() {
                   })
                 }
               >
-                <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.itemImage}
+                />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemTitle}>{item.title}</Text>
                   <Text style={styles.itemSubtitle}>
@@ -193,33 +265,60 @@ export default function PlaylistScreen() {
           )}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="musical-notes-outline" size={64} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.emptyText}>No bhajans yet for {selectedDay}</Text>
+              <Ionicons
+                name="musical-notes-outline"
+                size={64}
+                color="rgba(255,255,255,0.7)"
+              />
+              <Text style={styles.emptyText}>
+                No bhajans yet for {selectedDay}
+              </Text>
             </View>
           }
           contentContainerStyle={styles.listContainer}
         />
 
         {/* FAB */}
-        <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)}>
-          <LinearGradient colors={["#4ECDC4", "#45B7D1"]} style={styles.fabInner}>
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setShowAddModal(true)}
+        >
+          <LinearGradient
+            colors={["#4ECDC4", "#45B7D1"]}
+            style={styles.fabInner}
+          >
             <Ionicons name="add" size={32} color="#fff" />
           </LinearGradient>
         </TouchableOpacity>
 
         {/* MODAL */}
         <Modal visible={showAddModal} animationType="slide">
-          <SafeAreaView style={[styles.modalContainer, { backgroundColor: themeBackground }]}>
+          <SafeAreaView
+            style={[
+              styles.modalContainer,
+              { backgroundColor: themeBackground },
+            ]}
+          >
             {/* HEADER */}
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: themeText }]}>Add Bhajan</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)} style={styles.closeButton}>
+              <Text style={[styles.modalTitle, { color: themeText }]}>
+                Add Bhajan
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowAddModal(false)}
+                style={styles.closeButton}
+              >
                 <Ionicons name="close" size={26} color={themeMuted} />
               </TouchableOpacity>
             </View>
 
             {/* SEARCH */}
-            <View style={[styles.searchBar, { backgroundColor: isDark ? "#222" : "rgba(255,255,255,0.1)" }]}>
+            <View
+              style={[
+                styles.searchBar,
+                { backgroundColor: isDark ? "#222" : "rgba(255,255,255,0.1)" },
+              ]}
+            >
               <Ionicons name="search" size={18} color={themeMuted} />
               <TextInput
                 placeholder="Search bhajans..."
@@ -231,7 +330,11 @@ export default function PlaylistScreen() {
             </View>
 
             {/* CATEGORY SCROLL */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryScroll}
+            >
               {categories.map((c) => (
                 <TouchableOpacity
                   key={c}
@@ -243,7 +346,14 @@ export default function PlaylistScreen() {
                       : { backgroundColor: "rgba(255,255,255,0.08)" },
                   ]}
                 >
-                  <Text style={{ color: selectedCategory === c ? "#fff" : themeText, fontWeight: "600" }}>{c}</Text>
+                  <Text
+                    style={{
+                      color: selectedCategory === c ? "#fff" : themeText,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {c}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -254,22 +364,42 @@ export default function PlaylistScreen() {
               keyExtractor={(i) => i.id}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.addItem, { backgroundColor: isDark ? "#333" : "rgba(255,255,255,0.05)" }]}
+                  style={[
+                    styles.addItem,
+                    {
+                      backgroundColor: isDark
+                        ? "#333"
+                        : "rgba(255,255,255,0.05)",
+                    },
+                  ]}
                   onPress={() => addToPlaylist(item)}
                 >
-                  <Image source={{ uri: item.imageUrl }} style={styles.addImage} />
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.addImage}
+                  />
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.addTitle, { color: themeText }]} numberOfLines={1}>
+                    <Text
+                      style={[styles.addTitle, { color: themeText }]}
+                      numberOfLines={1}
+                    >
                       {item.title}
                     </Text>
                     <Text style={[styles.addSubtitle, { color: themeMuted }]}>
                       {item.deity} • {item.language}
                     </Text>
                   </View>
-                  <Ionicons name="add-circle-outline" size={28} color="#4ECDC4" />
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={28}
+                    color="#4ECDC4"
+                  />
                 </TouchableOpacity>
               )}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+              }}
             />
           </SafeAreaView>
         </Modal>
@@ -281,7 +411,11 @@ export default function PlaylistScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingVertical: 14 },
   headerTitle: { fontSize: 26, fontWeight: "800", color: "#fff" },
-  headerSubtitle: { color: "rgba(255,255,255,0.9)", fontWeight: "500", marginTop: 4 },
+  headerSubtitle: {
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "500",
+    marginTop: 4,
+  },
   dayScroll: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -364,6 +498,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     justifyContent: "center",
     alignItems: "center",
+    height: 50,
   },
 
   addItem: {
