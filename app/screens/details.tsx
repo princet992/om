@@ -2,22 +2,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { useDevotionalData } from "@/hooks/useDevotionalData";
 
-import aarti from "../../data/Aarti";
-import chalisa from "../../data/chalisa";
-import strotam from "../../data/strotam";
 import { deityDisplayNames, deityHindiNames, extractDeity, typeHindiNames } from "../../utils/deityUtils";
 
 export default function Details() {
   const { deity, category } = useLocalSearchParams();
   const router = useRouter();
   const [groupedItems, setGroupedItems] = useState<Record<string, any[]>>({});
+  const { data, loading, error, refetch } = useDevotionalData();
 
   useEffect(() => {
     // Process each array separately to maintain source information
@@ -42,9 +41,9 @@ export default function Details() {
     };
 
     // Process each type separately
-    const chalisaItems = processArray(chalisa as any[], "Chalisa");
-    const strotamItems = processArray(strotam as any[], "Strotam");
-    const aartiItems = processArray(aarti as any[], "Aarti");
+    const chalisaItems = processArray(data.chalisa as any[], "Chalisa");
+    const strotamItems = processArray(data.strotam as any[], "Strotam");
+    const aartiItems = processArray(data.aarti as any[], "Aarti");
 
     // Sort each array alphabetically by title
     const sortAlphabetically = (items: any[]) => {
@@ -73,7 +72,7 @@ export default function Details() {
     });
 
     setGroupedItems(filteredGrouped);
-  }, [deity, category]);
+  }, [data, deity, category]);
 
   const background = useThemeColor({}, "background");
   const cardColor = useThemeColor({}, "card");
@@ -130,7 +129,22 @@ export default function Details() {
           <Text style={[styles.header, { color: textColor }]}>{getHeaderTitle()}</Text>
 
           <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
-            {Object.keys(groupedItems).length > 0 ? (
+            {loading ? (
+              <View style={styles.stateContainer}>
+                <ActivityIndicator size="large" color={isDark ? "#FFD700" : "#E65100"} />
+                <Text style={[styles.stateText, { color: muted }]}>डेटा लोड हो रहा है...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.stateContainer}>
+                <Ionicons name="warning-outline" size={48} color="#E53935" />
+                <Text style={[styles.stateText, { color: muted }]}>
+                  {error || "डेटा लोड नहीं हो पाया।"}
+                </Text>
+                <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+                  <Text style={styles.retryText}>पुनः प्रयास करें</Text>
+                </TouchableOpacity>
+              </View>
+            ) : Object.keys(groupedItems).length > 0 ? (
               <View style={styles.grid}>
                 {Object.entries(groupedItems).map(([type, items], typeIndex) => {
                   const typeColor = typeColors[type] || { icon: muted, bg: "transparent" };
@@ -335,5 +349,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 16,
     fontWeight: "500",
+  },
+  stateContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 80,
+  },
+  stateText: {
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#E65100",
+  },
+  retryText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });

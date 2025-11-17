@@ -48,3 +48,15 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Devotional API server
+
+Static devotional content is now served from a lightweight Express API so the mobile app can load data dynamically.
+
+1. Start the API
+
+   ```bash
+   npm run api
+   ```
+
+2. Configure the app to point at the API by setting `EXPO_PUBLIC_API_URL`. When running locally, the default `http://localhost:4000/api` is used automatically.

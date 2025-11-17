@@ -1,27 +1,26 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { useDevotionalData } from "@/hooks/useDevotionalData";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  FlatList,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import aarti from "../../data/Aarti";
-import chalisa from "../../data/chalisa";
-import strotam from "../../data/strotam";
-import { extractDeity, deityHindiNames, deityDisplayNames } from "../../utils/deityUtils";
+import { deityHindiNames, extractDeity } from "../../utils/deityUtils";
 
 interface PlaylistItem {
   id: string;
@@ -89,16 +88,11 @@ const convertToPlaylistItems = (data: any[], type: string): PlaylistItem[] =>
     };
   });
 
-const ALL_CONTENT: PlaylistItem[] = [
-  ...convertToPlaylistItems(chalisa, "Chalisa"),
-  ...convertToPlaylistItems(strotam, "Strotam"),
-  ...convertToPlaylistItems(aarti, "Aarti"),
-];
-
 const STORAGE_KEY = "user_playlist_v1";
 
 export default function PlaylistScreen() {
   const router = useRouter();
+  const { data, loading: dataLoading, error: dataError, refetch } = useDevotionalData();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const themeText = useThemeColor({}, "text");
@@ -146,12 +140,21 @@ export default function PlaylistScreen() {
     items: [],
   };
 
-  const categories = [
-    "All",
-    ...Array.from(new Set(ALL_CONTENT.map((i) => i.deity))),
-  ];
+  const allContent = useMemo(
+    () => [
+      ...convertToPlaylistItems(data.chalisa, "Chalisa"),
+      ...convertToPlaylistItems(data.strotam, "Strotam"),
+      ...convertToPlaylistItems(data.aarti, "Aarti"),
+    ],
+    [data],
+  );
 
-  const filteredBhajans = ALL_CONTENT.filter((i) => {
+  const categories = useMemo(
+    () => ["All", ...Array.from(new Set(allContent.map((i) => i.deity)))],
+    [allContent],
+  );
+
+  const filteredBhajans = allContent.filter((i) => {
     const s = searchQuery.toLowerCase();
     const match =
       i.title.toLowerCase().includes(s) ||
@@ -336,144 +339,165 @@ export default function PlaylistScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* SEARCH */}
-            <View
-              style={[
-                styles.searchBar,
-                { 
-                  backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
-                  borderWidth: 1,
-                  borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
-                },
-              ]}
-            >
-              <Ionicons name="search" size={20} color={themeMuted} />
-              <TextInput
-                placeholder="भजन खोजें..."
-                placeholderTextColor={themeMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                style={[styles.searchInput, { color: themeText }]}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <Ionicons name="close-circle" size={20} color={themeMuted} />
+            {dataLoading ? (
+              <View style={styles.modalState}>
+                <ActivityIndicator size="large" color={isDark ? "#4ECDC4" : "#1976D2"} />
+                <Text style={[styles.modalStateText, { color: themeMuted }]}>
+                  भजन डेटा लोड हो रहा है...
+                </Text>
+              </View>
+            ) : dataError ? (
+              <View style={styles.modalState}>
+                <Ionicons name="warning-outline" size={48} color="#E53935" />
+                <Text style={[styles.modalStateText, { color: themeMuted }]}>
+                  {dataError || "डेटा लोड नहीं हो पाया।"}
+                </Text>
+                <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+                  <Text style={styles.retryText}>पुनः प्रयास करें</Text>
                 </TouchableOpacity>
-              )}
-            </View>
-
-            {/* CATEGORY SCROLL */}
-            <View style={styles.categorySection}>
-              <Text style={[styles.categoryLabel, { color: themeMuted }]}>
-                श्रेणी / Category
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.categoryScroll}
-              >
-                {categories.map((c) => {
-                  const isSelected = selectedCategory === c;
-                  const chipColor = isDark 
-                    ? (isSelected ? "#4ECDC4" : "transparent")
-                    : (isSelected ? "#1976D2" : "transparent");
-                  
-                  return (
-                    <TouchableOpacity
-                      key={c}
-                      onPress={() => setSelectedCategory(c)}
-                      activeOpacity={0.7}
-                      style={[
-                        styles.chip,
-                        isSelected
-                          ? { 
-                              backgroundColor: chipColor,
-                              shadowColor: chipColor,
-                              shadowOpacity: 0.4,
-                              shadowRadius: 6,
-                              shadowOffset: { width: 0, height: 2 },
-                              elevation: 4,
-                              transform: [{ scale: 1.02 }],
-                            }
-                          : { 
-                              backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-                              borderWidth: 1.5,
-                              borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)",
-                            },
-                      ]}
-                    >
-                      {isSelected && (
-                        <Ionicons 
-                          name="checkmark-circle" 
-                          size={16} 
-                          color="#fff" 
-                          style={{ marginRight: 6 }}
-                        />
-                      )}
-                      <Text
-                        style={[
-                          styles.chipText,
-                          {
-                            color: isSelected ? "#fff" : themeText,
-                            fontWeight: isSelected ? "700" : "600",
-                          },
-                        ]}
-                      >
-                        {c === "All" ? "सभी" : deityHindiNames[c] || c}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* BHAJAN LIST */}
-            <FlatList
-              data={filteredBhajans}
-              keyExtractor={(i) => i.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
+              </View>
+            ) : (
+              <>
+                {/* SEARCH */}
+                <View
                   style={[
-                    styles.addItem,
-                    {
-                      backgroundColor: isDark
-                        ? "#333"
-                        : "rgba(255,255,255,0.05)",
+                    styles.searchBar,
+                    { 
+                      backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+                      borderWidth: 1,
+                      borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
                     },
                   ]}
-                  onPress={() => addToPlaylist(item)}
                 >
-                  <Image
-                    source={{ uri: item.imageUrl }}
-                    style={styles.addImage}
+                  <Ionicons name="search" size={20} color={themeMuted} />
+                  <TextInput
+                    placeholder="भजन खोजें..."
+                    placeholderTextColor={themeMuted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    style={[styles.searchInput, { color: themeText }]}
                   />
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[styles.addTitle, { color: themeText }]}
-                      numberOfLines={2}
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery("")}>
+                      <Ionicons name="close-circle" size={20} color={themeMuted} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* CATEGORY SCROLL */}
+                <View style={styles.categorySection}>
+                  <Text style={[styles.categoryLabel, { color: themeMuted }]}>
+                    श्रेणी / Category
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoryScroll}
+                  >
+                    {categories.map((c) => {
+                      const isSelected = selectedCategory === c;
+                      const chipColor = isDark 
+                        ? (isSelected ? "#4ECDC4" : "transparent")
+                        : (isSelected ? "#1976D2" : "transparent");
+                      
+                      return (
+                        <TouchableOpacity
+                          key={c}
+                          onPress={() => setSelectedCategory(c)}
+                          activeOpacity={0.7}
+                          style={[
+                            styles.chip,
+                            isSelected
+                              ? { 
+                                  backgroundColor: chipColor,
+                                  shadowColor: chipColor,
+                                  shadowOpacity: 0.4,
+                                  shadowRadius: 6,
+                                  shadowOffset: { width: 0, height: 2 },
+                                  elevation: 4,
+                                  transform: [{ scale: 1.02 }],
+                                }
+                              : { 
+                                  backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+                                  borderWidth: 1.5,
+                                  borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)",
+                                },
+                          ]}
+                        >
+                          {isSelected && (
+                            <Ionicons 
+                              name="checkmark-circle" 
+                              size={16} 
+                              color="#fff" 
+                              style={{ marginRight: 6 }}
+                            />
+                          )}
+                          <Text
+                            style={[
+                              styles.chipText,
+                              {
+                                color: isSelected ? "#fff" : themeText,
+                                fontWeight: isSelected ? "700" : "600",
+                              },
+                            ]}
+                          >
+                            {c === "All" ? "सभी" : deityHindiNames[c] || c}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+
+                {/* BHAJAN LIST */}
+                <FlatList
+                  data={filteredBhajans}
+                  keyExtractor={(i) => i.id}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.addItem,
+                        {
+                          backgroundColor: isDark
+                            ? "#333"
+                            : "rgba(255,255,255,0.05)",
+                        },
+                      ]}
+                      onPress={() => addToPlaylist(item)}
                     >
-                      {item.title}
-                    </Text>
-                    <Text style={[styles.addSubtitle, { color: themeMuted }]}>
-                      {deityHindiNames[item.deity] || item.deity} • {item.language}
-                    </Text>
-                  </View>
-                  <View style={[styles.addButton, {
-                    backgroundColor: isDark ? "rgba(78, 205, 196, 0.2)" : "rgba(25, 118, 210, 0.1)",
-                  }]}>
-                    <Ionicons
-                      name="add-circle"
-                      size={28}
-                      color={isDark ? "#4ECDC4" : "#1976D2"}
-                    />
-                  </View>
-                </TouchableOpacity>
-              )}
-              contentContainerStyle={{
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-              }}
-            />
+                      <Image
+                        source={{ uri: item.imageUrl }}
+                        style={styles.addImage}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[styles.addTitle, { color: themeText }]}
+                          numberOfLines={2}
+                        >
+                          {item.title}
+                        </Text>
+                        <Text style={[styles.addSubtitle, { color: themeMuted }]}>
+                          {deityHindiNames[item.deity] || item.deity} • {item.language}
+                        </Text>
+                      </View>
+                      <View style={[styles.addButton, {
+                        backgroundColor: isDark ? "rgba(78, 205, 196, 0.2)" : "rgba(25, 118, 210, 0.1)",
+                      }]}>
+                        <Ionicons
+                          name="add-circle"
+                          size={28}
+                          color={isDark ? "#4ECDC4" : "#1976D2"}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  contentContainerStyle={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                  }}
+                />
+              </>
+            )}
           </SafeAreaView>
         </Modal>
       </SafeAreaView>
@@ -696,5 +720,27 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
     backgroundColor: "rgba(255, 107, 107, 0.1)",
+  },
+  modalState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalStateText: {
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#E65100",
+  },
+  retryText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });
